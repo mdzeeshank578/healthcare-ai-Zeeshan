@@ -19,6 +19,21 @@ services:
       timeout: 5s
       retries: 5
 
+  ai-service:
+    build:
+      context: apps/ai-service
+      dockerfile: Dockerfile
+    container_name: smart-healthcare-ai-service-prod
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   backend:
     build:
       context: .
@@ -30,10 +45,13 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      AI_SERVICE_URL: http://ai-service:8000
     ports:
-      - "4005:4000"
+      - "4000:4000"
     depends_on:
       postgres:
+        condition: service_healthy
+      ai-service:
         condition: service_healthy
     healthcheck:
       test:
@@ -46,7 +64,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 15s
 
   doctor-dashboard:
     build:

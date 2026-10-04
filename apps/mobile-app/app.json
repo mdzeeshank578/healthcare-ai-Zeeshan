@@ -8,6 +8,15 @@
     "scheme": "healthcareaimobilev2",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b2ccc844-197a-43ff-a968-968a05a46cb2",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sonia123.healthcareaimobilev2"
@@ -21,7 +30,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.sonia123.healthcareaimobilev2"
+      "package": "com.sonia123.healthcareaimobilev2",
+      "usesCleartextTraffic": true
     },
     "web": {
       "output": "static",
@@ -51,7 +61,8 @@
         }
       ],
       "expo-asset",
-      "onnxruntime-react-native"
+      "onnxruntime-react-native",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true,

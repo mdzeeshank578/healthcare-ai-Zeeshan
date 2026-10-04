@@ -91,7 +91,11 @@ export const authService = {
     const key = 'healthai_device_id';
     let deviceId = localStorage.getItem(key);
     if (!deviceId) {
-      deviceId = crypto.randomUUID();
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        deviceId = crypto.randomUUID();
+      } else {
+        deviceId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 15);
+      }
       localStorage.setItem(key, deviceId);
     }
     return deviceId;

@@ -1,6 +1,5 @@
 import { clearAuthTokens, getAccessToken, saveAuthTokens } from '@/lib/token-storage';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 
 type ApiFailure = {
   success: false;
