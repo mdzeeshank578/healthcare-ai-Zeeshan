@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { offlineStorage } from '@/lib/offline-storage';
 import { ashaApi } from '@/lib/asha-api';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -206,20 +206,28 @@ export default function PatientsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <View>
-            <Text style={styles.title}>Patients Directory</Text>
-            <Text style={styles.subtitle}>
-              {patients.length} registered patient{patients.length !== 1 ? 's' : ''}
-            </Text>
+          <View style={styles.titleLeft}>
+            <TouchableOpacity
+              style={styles.headerBackButton}
+              onPress={() => router.canGoBack() ? router.back() : router.replace('/dashboard')}
+              accessibilityLabel="Go back">
+              <Ionicons name="arrow-back" size={22} color="#0F172A" />
+            </TouchableOpacity>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title} numberOfLines={1}>Patients Directory</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>
+                {patients.length} registered patient{patients.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
           </View>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => router.push('/add-patient')}>
-            <Ionicons name="add" size={20} color="#FFFFFF" />
-            <Text style={styles.addButtonText}>Add Patient</Text>
+            <Ionicons name="add" size={18} color="#FFFFFF" />
+            <Text style={styles.addButtonText}>Add</Text>
           </TouchableOpacity>
         </View>
 
@@ -299,13 +307,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
+  titleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  headerBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  titleContainer: {
+    flex: 1,
+  },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#0F172A',
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
   },
@@ -405,7 +431,7 @@ const styles = StyleSheet.create({
   },
   patientSubInfo: {
     marginTop: 4,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   metaText: {
     fontSize: 14,

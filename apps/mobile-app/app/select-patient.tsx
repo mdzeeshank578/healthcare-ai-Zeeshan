@@ -5,13 +5,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Patient = {
   id?: string | number;
@@ -88,14 +88,17 @@ export default function SelectPatientScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/dashboard')}
+          accessibilityLabel="Go back">
           <Ionicons name="arrow-back" size={22} color="#16323A" />
         </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Select Patient</Text>
-          <Text style={styles.subtitle}>Choose a patient for this health assessment</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title} numberOfLines={1}>Select Patient</Text>
+          <Text style={styles.subtitle} numberOfLines={1}>Choose a patient for this health assessment</Text>
         </View>
       </View>
 

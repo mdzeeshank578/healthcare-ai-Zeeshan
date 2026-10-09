@@ -8,6 +8,8 @@ export const saveAuthTokens = (accessToken: string, refreshToken: string) =>
 
 export const getAccessToken = () => SecureStore.getItemAsync('access_token');
 
+export const getRefreshToken = () => SecureStore.getItemAsync('refresh_token');
+
 export const clearAuthTokens = () =>
   Promise.all([
     SecureStore.deleteItemAsync('access_token'),

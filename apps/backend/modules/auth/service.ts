@@ -14,8 +14,8 @@ export class AuthService {
     private readonly mailer: MailService,
     private readonly jwtService: JwtService,
   ) {}
-  private readonly accessTokenLifetime = "15m";
-  private readonly refreshTokenLifetimeMs = 1000 * 60 * 60 * 24 * 30;
+  private readonly accessTokenLifetime = "30d";
+  private readonly refreshTokenLifetimeMs = 1000 * 60 * 60 * 24 * 365;
 
   public async requestOtp(email: string): Promise<void> {
     const user = await this.repository.findUserByEmail(email.toLowerCase());
@@ -136,13 +136,24 @@ export class AuthService {
     role: Role;
     status: UserStatus;
     isEmailVerified: boolean;
+    doctorProfile?: { fullName?: string | null } | null;
+    adminProfile?: { fullName?: string | null } | null;
+    ashaProfile?: { fullName?: string | null } | null;
   }): AuthUserResponseDto {
+    const fullName =
+      user.doctorProfile?.fullName ||
+      user.adminProfile?.fullName ||
+      user.ashaProfile?.fullName ||
+      undefined;
+
     return {
       id: user.id,
       email: user.email,
       role: user.role,
       status: user.status,
       isEmailVerified: user.isEmailVerified,
+      fullName: fullName ?? undefined,
+      name: fullName ?? undefined,
     };
   }
 }

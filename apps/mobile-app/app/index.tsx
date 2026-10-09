@@ -1,26 +1,89 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   StatusBar,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { getAccessToken, getRefreshToken } from '@/lib/token-storage';
+import { auth } from '@/lib/auth';
 
 export default function WelcomeScreen() {
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { height, width } = useWindowDimensions();
+  const isSmallDevice = height < 700 || width < 360;
+
+  useEffect(() => {
+    let isMounted = true;
+    async function checkSession() {
+      try {
+        const [accessToken, refreshToken] = await Promise.all([
+          getAccessToken(),
+          getRefreshToken(),
+        ]);
+
+        if (accessToken || refreshToken) {
+          // If we have either token, attempt session verification / recovery
+          const profile = await auth.getAshaProfile().catch(async () => {
+            const fresh = await auth.refreshSession();
+            if (fresh) {
+              return auth.getAshaProfile().catch(() => null);
+            }
+            return null;
+          });
+
+          if (profile?.data?.id && isMounted) {
+            router.replace('/dashboard');
+            return;
+          }
+        }
+      } catch {
+        // Not authenticated or network issue; allow user to see welcome/login
+      } finally {
+        if (isMounted) {
+          setCheckingAuth(false);
+        }
+      }
+    }
+
+    void checkSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleGetStarted = () => {
     router.push('/login');
   };
 
+  if (checkingAuth) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar barStyle="dark-content" />
+        <ActivityIndicator size="large" color="#0B8F87" />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.container}>
-
-        {/* Logo */}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          isSmallDevice && styles.scrollContentSmall,
+        ]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* Top Logo */}
         <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
             <Text style={styles.logoIcon}>+</Text>
@@ -32,29 +95,27 @@ export default function WelcomeScreen() {
         </View>
 
         {/* Main Content */}
-        <View style={styles.content}>
-
-          <View style={styles.illustration}>
-            <Text style={styles.illustrationIcon}>
+        <View style={[styles.content, isSmallDevice && { marginTop: 10 }]}>
+          <View style={[styles.illustration, isSmallDevice && { width: 84, height: 84, borderRadius: 42, marginBottom: 12 }]}>
+            <Text style={[styles.illustrationIcon, isSmallDevice && { fontSize: 40 }]}>
               🩺
             </Text>
           </View>
 
-          <Text style={styles.title}>
+          <Text style={[styles.title, isSmallDevice && { fontSize: 28, lineHeight: 34 }]}>
             Healthcare{'\n'}
             <Text style={styles.titleHighlight}>
               AI Platform
             </Text>
           </Text>
 
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, isSmallDevice && { marginTop: 8, fontSize: 13, lineHeight: 19 }]}>
             Smart healthcare assistance for ASHA workers,
             helping you provide better care to every patient.
           </Text>
 
           {/* Feature 1 */}
-          <View style={styles.features}>
-
+          <View style={[styles.features, isSmallDevice && { marginTop: 16 }]}>
             <View style={styles.featureRow}>
               <View style={styles.featureIcon}>
                 <Text style={styles.featureEmoji}>
@@ -110,13 +171,11 @@ export default function WelcomeScreen() {
                 </Text>
               </View>
             </View>
-
           </View>
         </View>
 
         {/* Bottom */}
         <View style={styles.bottomSection}>
-
           <TouchableOpacity
             style={styles.button}
             activeOpacity={0.8}
@@ -134,10 +193,8 @@ export default function WelcomeScreen() {
           <Text style={styles.footerText}>
             Empowering healthcare. Improving lives.
           </Text>
-
         </View>
-
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -148,12 +205,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7FAFC',
   },
 
-  container: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 18,
+    paddingTop: 16,
+    paddingBottom: 20,
     justifyContent: 'space-between',
+  },
+
+  scrollContentSmall: {
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 14,
   },
 
   logoContainer: {

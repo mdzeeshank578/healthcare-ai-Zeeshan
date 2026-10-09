@@ -3,7 +3,7 @@ import type { AuthRequest } from "../../middleware/auth.middleware.js";
 import { sendSuccess } from "../../utils/api-response.js";
 import { AppError } from "../../utils/app-error.js";
 import type { PhcService } from "./service.js";
-import type { StatisticsQuery, UpdatePhcInput } from "./validation.js";
+import type { StatisticsQuery, UpdateAshaWorkerInput, UpdatePhcInput } from "./validation.js";
 
 export class PhcController {
   public constructor(private readonly service: PhcService) {}
@@ -73,6 +73,38 @@ export class PhcController {
       200,
       await this.service.ashaWorkers(this.userId(req)),
       "ASHA workers fetched successfully.",
+    );
+  public updateAshaWorker = async (req: AuthRequest, res: Response) =>
+    sendSuccess(
+      res,
+      200,
+      await this.service.updateAshaWorker(
+        this.userId(req),
+        req.params.workerId as string,
+        req.body as UpdateAshaWorkerInput,
+      ),
+      "ASHA worker updated successfully.",
+    );
+  public activateAshaWorker = async (req: AuthRequest, res: Response) =>
+    sendSuccess(
+      res,
+      200,
+      await this.service.activateAshaWorker(this.userId(req), req.params.workerId as string),
+      "ASHA worker activated successfully.",
+    );
+  public deactivateAshaWorker = async (req: AuthRequest, res: Response) =>
+    sendSuccess(
+      res,
+      200,
+      await this.service.deactivateAshaWorker(this.userId(req), req.params.workerId as string),
+      "ASHA worker deactivated successfully.",
+    );
+  public deleteAshaWorker = async (req: AuthRequest, res: Response) =>
+    sendSuccess(
+      res,
+      200,
+      await this.service.deleteAshaWorker(this.userId(req), req.params.workerId as string),
+      "ASHA worker removed successfully.",
     );
   public operations = async (req: AuthRequest, res: Response) =>
     sendSuccess(

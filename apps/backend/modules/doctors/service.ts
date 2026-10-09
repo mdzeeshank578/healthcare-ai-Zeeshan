@@ -99,6 +99,13 @@ export class DoctorService {
     return this.map(await this.repository.updateStatus(doctorId, UserStatus.INACTIVE, userId));
   }
 
+  public async delete(userId: string, doctorId: string) {
+    const admin = await this.access.requireAdminPhc(userId);
+    await this.requireDoctor(doctorId, admin.phcId);
+    await this.repository.delete(doctorId);
+    return { success: true };
+  }
+
   public async availability(userId: string) {
     const doctor = await this.access.requireDoctor(userId);
     return (await this.repository.availability(doctor.id))?.schedule ?? {};
@@ -148,6 +155,7 @@ export class DoctorService {
         gender: patient.gender,
         phone: patient.phone,
         village: patient.village,
+        registeredBy: patient.registeredBy,
         latestAssessment: patient.assessments[0] ?? null,
         latestPrediction: patient.assessments[0]?.predictions[0] ?? null,
         latestReferral: patient.referrals[0] ?? null,

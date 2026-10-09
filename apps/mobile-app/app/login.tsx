@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { auth, AuthApiError } from '@/lib/auth';
+import { getAccessToken, getRefreshToken } from '@/lib/token-storage';
 
 type Toast = { type: 'success' | 'error'; message: string };
 
@@ -23,6 +25,38 @@ export default function LoginScreen() {
   const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+
+  const insets = useSafeAreaInsets();
+  const { height, width } = useWindowDimensions();
+  const isSmallDevice = height < 700 || width < 360;
+
+  useEffect(() => {
+    let isMounted = true;
+    async function checkExistingSession() {
+      try {
+        const [accessToken, refreshToken] = await Promise.all([
+          getAccessToken(),
+          getRefreshToken(),
+        ]);
+        if (accessToken || refreshToken) {
+          const profile = await auth.getAshaProfile().catch(async () => {
+            const fresh = await auth.refreshSession();
+            if (fresh) {
+              return auth.getAshaProfile().catch(() => null);
+            }
+            return null;
+          });
+          if (profile?.data?.id && isMounted) {
+            router.replace('/dashboard');
+          }
+        }
+      } catch {}
+    }
+    void checkExistingSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const isOtpValid = otpRequested && /^\d{6}$/.test(otp);
@@ -81,7 +115,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
       <StatusBar barStyle="dark-content" />
 
       <KeyboardAvoidingView
@@ -89,13 +123,23 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isSmallDevice && styles.scrollContentSmall,
+          ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-
-          {/* Logo */}
+          {/* Logo & Back */}
           <View style={styles.logoSection}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
+              accessibilityLabel="Back"
+            >
+              <Text style={styles.backArrow}>‹</Text>
+            </TouchableOpacity>
 
             <View style={styles.logoCircle}>
               <Text style={styles.logoIcon}>
@@ -106,25 +150,21 @@ export default function LoginScreen() {
             <Text style={styles.logoText}>
               HealthCare AI
             </Text>
-
           </View>
 
           {/* Heading */}
-          <View style={styles.headingSection}>
-
-            <Text style={styles.title}>
+          <View style={[styles.headingSection, isSmallDevice && styles.headingSectionSmall]}>
+            <Text style={[styles.title, isSmallDevice && { fontSize: 26 }]}>
               Welcome Back
             </Text>
 
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, isSmallDevice && { fontSize: 13, marginTop: 4 }]}>
               Login to continue to your Healthcare AI dashboard
             </Text>
-
           </View>
 
           {/* Login Card */}
-          <View style={styles.card}>
-
+          <View style={[styles.card, isSmallDevice && styles.cardSmall]}>
             {/* Gmail */}
             <Text style={styles.label}>
               Gmail
@@ -143,7 +183,6 @@ export default function LoginScreen() {
                 value={email}
                 onChangeText={handleEmailChange}
               />
-
             </View>
 
             <TouchableOpacity
@@ -190,7 +229,6 @@ export default function LoginScreen() {
               onPress={() => void handleLogin()}
               disabled={!isEmailValid || !isOtpValid || isLoggingIn}
             >
-
               <Text style={styles.loginButtonText}>
                 {isLoggingIn ? 'Signing in…' : 'Login'}
               </Text>
@@ -198,14 +236,11 @@ export default function LoginScreen() {
               <Text style={styles.arrow}>
                 →
               </Text>
-
             </TouchableOpacity>
-
           </View>
 
           {/* Information */}
           <View style={styles.infoBox}>
-
             <Text style={styles.infoTitle}>
               🩺 ASHA Worker Access
             </Text>
@@ -214,18 +249,20 @@ export default function LoginScreen() {
               This application is designed to help ASHA workers
               manage patients and access AI-powered health insights.
             </Text>
-
           </View>
 
           {/* Footer */}
           <Text style={styles.footer}>
             Empowering healthcare. Improving lives.
           </Text>
-
         </ScrollView>
       </KeyboardAvoidingView>
       {toast ? (
-        <View style={[styles.toast, toast.type === 'success' ? styles.toastSuccess : styles.toastError]}>
+        <View style={[
+          styles.toast,
+          toast.type === 'success' ? styles.toastSuccess : styles.toastError,
+          { bottom: Math.max(24, insets.bottom + 12) },
+        ]}>
           <Text style={styles.toastText}>{toast.message}</Text>
         </View>
       ) : null}
@@ -246,13 +283,40 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 30,
+    paddingTop: 20,
     paddingBottom: 25,
+  },
+
+  scrollContentSmall: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 18,
   },
 
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  backArrow: {
+    fontSize: 28,
+    color: '#16323A',
+    marginTop: -2,
   },
 
   logoCircle: {
@@ -278,8 +342,13 @@ const styles = StyleSheet.create({
   },
 
   headingSection: {
-    marginTop: 55,
-    marginBottom: 28,
+    marginTop: 40,
+    marginBottom: 24,
+  },
+
+  headingSectionSmall: {
+    marginTop: 18,
+    marginBottom: 16,
   },
 
   title: {
@@ -309,6 +378,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
 
     elevation: 3,
+  },
+
+  cardSmall: {
+    padding: 16,
+    borderRadius: 16,
   },
 
   label: {

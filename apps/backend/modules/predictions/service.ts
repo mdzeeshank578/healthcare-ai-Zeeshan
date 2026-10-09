@@ -227,6 +227,7 @@ export class PredictionService {
             OR: [
               { appointments: { some: { doctorId: doctor.id } } },
               { referrals: { some: { doctorAssignments: { some: { doctorId: doctor.id } } } } },
+              { village: { phcId: doctor.phcId } },
             ],
           },
         },
@@ -268,6 +269,7 @@ export class PredictionService {
         OR: [
           { appointments: { some: { doctorId: doctor.id } } },
           { referrals: { some: { doctorAssignments: { some: { doctorId: doctor.id } } } } },
+          { village: { phcId: doctor.phcId } },
         ],
       };
     }

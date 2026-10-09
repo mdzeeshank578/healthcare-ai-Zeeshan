@@ -1,15 +1,16 @@
 import { offlineStorage } from '@/lib/offline-storage';
+import { ashaApi } from '@/lib/asha-api';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Patient = {
   id: number | string;
@@ -247,6 +248,74 @@ export default function DashboardScreen() {
         ),
       ]);
 
+      // Trigger background sync for any unsynced assessments
+      if (storedAssessments) {
+        void (async () => {
+          try {
+            const list = JSON.parse(storedAssessments);
+            if (!Array.isArray(list) || list.length === 0) return;
+            let didUpdate = false;
+            for (const item of list) {
+              if (item.patientId && item.patientId !== 'unknown' && !item._backendSynced) {
+                const vitals = item.vitals || {};
+                const tempF = Number(vitals.temperature ?? item.temperature);
+                const tempC = !isNaN(tempF)
+                  ? (tempF > 50 ? Math.round(((tempF - 32) * 5 / 9) * 10) / 10 : tempF)
+                  : undefined;
+                const ageVal = Number(item.patientAge);
+                const age = !isNaN(ageVal) && ageVal > 0 ? Math.min(120, Math.round(ageVal)) : 30;
+
+                const payload: Record<string, any> = {
+                  id: String(item.id),
+                  patientId: String(item.patientId),
+                  age,
+                  weightKg: !isNaN(Number(item.weight)) ? Number(item.weight) : undefined,
+                  heightCm: !isNaN(Number(item.height)) ? Number(item.height) : undefined,
+                  systolicBp: !isNaN(Number(vitals.systolicBP ?? item.sysBP)) ? Number(vitals.systolicBP ?? item.sysBP) : undefined,
+                  diastolicBp: !isNaN(Number(vitals.diastolicBP ?? item.diaBP)) ? Number(vitals.diastolicBP ?? item.diaBP) : undefined,
+                  restingBloodPressure: !isNaN(Number(vitals.systolicBP ?? item.sysBP)) ? Number(vitals.systolicBP ?? item.sysBP) : undefined,
+                  heartRate: !isNaN(Number(vitals.heartRate ?? item.heartRate)) ? Number(vitals.heartRate ?? item.heartRate) : undefined,
+                  maxHeartRate: !isNaN(Number(vitals.heartRate ?? item.heartRate)) ? Number(vitals.heartRate ?? item.heartRate) : undefined,
+                  oxygenSaturation: !isNaN(Number(vitals.oxygenSaturation ?? item.oxygenSaturation)) ? Number(vitals.oxygenSaturation ?? item.oxygenSaturation) : undefined,
+                  temperatureC: tempC,
+                  glucose: item.modelInputs?.Glucose ? Number(item.modelInputs.Glucose) : undefined,
+                  cholesterol: item.modelInputs?.chol ? Number(item.modelInputs.chol) : undefined,
+                  pregnancies: item.modelInputs?.Pregnancies ? Number(item.modelInputs.Pregnancies) : undefined,
+                  skinThickness: item.modelInputs?.SkinThickness ? Number(item.modelInputs.SkinThickness) : undefined,
+                  insulin: item.modelInputs?.Insulin ? Number(item.modelInputs.Insulin) : undefined,
+                  diabetesPedigreeFunction: item.modelInputs?.DiabetesPedigreeFunction ? Number(item.modelInputs.DiabetesPedigreeFunction) : undefined,
+                  smokingStatus: (item.modelInputs?.Smoking_Status === '1' || item.modelInputs?.Smoking_Status === 1) ? 'SMOKER' : 'NON_SMOKER',
+                  symptoms: Array.isArray(item.symptoms) ? item.symptoms : (typeof item.symptoms === 'string' ? item.symptoms.split(',').map((s: string) => s.trim()) : []),
+                  notes: item.additionalDetails || item.notes || undefined,
+                  inputSource: 'MANUAL',
+                  clientCreatedAt: item.date || item.createdAt || new Date().toISOString(),
+                };
+
+                Object.keys(payload).forEach((k) => {
+                  if (payload[k] === undefined) delete payload[k];
+                });
+
+                try {
+                  await ashaApi.createAssessment(payload);
+                  await ashaApi.completeAssessment(String(item.id)).catch(() => undefined);
+                  item._backendSynced = true;
+                  didUpdate = true;
+                } catch (e: any) {
+                  if (e?.code === 'RESOURCE_CONFLICT' || e?.status === 409) {
+                    await ashaApi.completeAssessment(String(item.id)).catch(() => undefined);
+                    item._backendSynced = true;
+                    didUpdate = true;
+                  }
+                }
+              }
+            }
+            if (didUpdate) {
+              await offlineStorage.setItem('healthAssessments', JSON.stringify(list));
+            }
+          } catch {}
+        })();
+      }
+
       // --------------------------------------------
       // LOAD PATIENTS
       // --------------------------------------------
@@ -424,6 +493,7 @@ export default function DashboardScreen() {
     return (
       <SafeAreaView
         style={styles.safeArea}
+        edges={['top', 'left', 'right']}
       >
         <View
           style={styles.loadingContainer}
@@ -446,6 +516,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView
       style={styles.safeArea}
+      edges={['top', 'left', 'right']}
     >
       <ScrollView
         style={styles.container}

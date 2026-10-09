@@ -1,4 +1,4 @@
-import { clearAuthTokens, getAccessToken, saveAuthTokens } from '@/lib/token-storage';
+import { clearAuthTokens, getAccessToken, getRefreshToken, saveAuthTokens } from '@/lib/token-storage';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 
 type ApiFailure = {
@@ -60,6 +60,8 @@ const authErrorMessage = (code: string, fallback?: string) => {
     INVALID_OTP: 'That code is incorrect, expired, or has already been used. Request a new code and try again.',
     VALIDATION_ERROR: 'Please check your email address and verification code, then try again.',
     FORBIDDEN: 'This account is not permitted to access the ASHA Worker app.',
+    INVALID_ACCESS_TOKEN: 'Your session has ended or expired. Please sign in again.',
+    UNAUTHENTICATED: 'Your session has ended. Please sign in again.',
   };
   return messages[code] ?? fallback ?? 'We could not complete your request. Please try again.';
 };
@@ -89,6 +91,30 @@ async function post<T>(path: string, body: object): Promise<ApiSuccess<T>> {
   return payload;
 }
 
+export async function refreshAuthTokens(): Promise<string | null> {
+  const refreshToken = await getRefreshToken();
+  if (!refreshToken || !API_BASE_URL) return null;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    const payload = (await res.json().catch(() => null)) as ApiSuccess<{ accessToken: string; refreshToken?: string }> | null;
+    if (res.ok && payload && payload.success && payload.data?.accessToken) {
+      const newAccess = payload.data.accessToken;
+      const newRefresh = payload.data.refreshToken || refreshToken;
+      await saveAuthTokens(newAccess, newRefresh);
+      return newAccess;
+    }
+  } catch {
+    // Refresh request failed
+  }
+  return null;
+}
+
 export async function authorizedRequest<T>(
   path: string,
   method: 'GET' | 'POST' | 'PATCH',
@@ -98,15 +124,20 @@ export async function authorizedRequest<T>(
     throw new AuthApiError('API_URL_MISSING', 'The app is not connected to the backend yet. Set EXPO_PUBLIC_API_URL and restart Expo.');
   }
 
-  const accessToken = await getAccessToken();
+  let accessToken = await getAccessToken();
   if (!accessToken) {
-    throw new AuthApiError('UNAUTHENTICATED', 'Your session has ended. Please sign in again.');
+    // Attempt automatic recovery via refresh token
+    accessToken = await refreshAuthTokens();
+    if (!accessToken) {
+      throw new AuthApiError('UNAUTHENTICATED', 'Your session has ended. Please sign in again.');
+    }
   }
 
   let response: Response | null = null;
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
       response = await fetch(`${API_BASE_URL}${path}`, {
         method,
         headers: {
@@ -115,6 +146,22 @@ export async function authorizedRequest<T>(
         },
         ...(body ? { body: isFormData ? body : JSON.stringify(body) } : {}),
       });
+
+      // If token expired (401), automatically refresh and retry once
+      if (response.status === 401) {
+        const freshAccessToken = await refreshAuthTokens();
+        if (freshAccessToken) {
+          accessToken = freshAccessToken;
+          response = await fetch(`${API_BASE_URL}${path}`, {
+            method,
+            headers: {
+              Authorization: `Bearer ${freshAccessToken}`,
+              ...(body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
+            },
+            ...(body ? { body: isFormData ? body : JSON.stringify(body) } : {}),
+          });
+        }
+      }
       break;
     } catch {
       if (attempt === 2) {
@@ -132,6 +179,9 @@ export async function authorizedRequest<T>(
   if (!response.ok || !payload || !payload.success) {
     const failure = payload as ApiFailure | null;
     const code = failure?.error?.code ?? 'REQUEST_FAILED';
+    if (code === 'INVALID_ACCESS_TOKEN' || response.status === 401) {
+      throw new AuthApiError('UNAUTHENTICATED', 'Your session has ended or expired. Please sign in again.');
+    }
     throw new AuthApiError(code, authErrorMessage(code, failure?.message));
   }
   return payload;
@@ -146,6 +196,7 @@ export const auth = {
   }),
   saveTokens: saveAuthTokens,
   clearTokens: clearAuthTokens,
+  refreshSession: refreshAuthTokens,
   getAshaProfile: () => authorizedRequest<AshaProfile>('/api/v1/asha/me', 'GET'),
   getAshaDashboard: () => authorizedRequest<AshaDashboard>('/api/v1/asha/me/dashboard', 'GET'),
   getAshaStatistics: () => authorizedRequest<AshaStatistics>('/api/v1/asha/me/statistics', 'GET'),

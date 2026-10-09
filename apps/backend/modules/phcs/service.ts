@@ -1,7 +1,8 @@
+import { UserStatus } from "@prisma/client";
 import type { AccessPolicy } from "../../common/policies/access.policy.js";
 import { AppError } from "../../utils/app-error.js";
 import type { PhcRepository } from "./repository.js";
-import type { StatisticsQuery, UpdatePhcInput } from "./validation.js";
+import type { StatisticsQuery, UpdateAshaWorkerInput, UpdatePhcInput } from "./validation.js";
 
 export class PhcService {
   public constructor(
@@ -67,6 +68,67 @@ export class PhcService {
         createdAt: worker.createdAt,
       })),
     };
+  }
+
+  public async updateAshaWorker(
+    userId: string,
+    workerId: string,
+    input: UpdateAshaWorkerInput,
+  ) {
+    const admin = await this.access.requireAdminPhc(userId);
+    const worker = await this.repository.findAshaWorker(admin.phcId, workerId);
+    if (!worker) throw new AppError("ASHA worker not found in your PHC.", 404, "RESOURCE_NOT_FOUND");
+    if (input.villageId) {
+      const village = await this.repository.village(admin.phcId, input.villageId);
+      if (!village) throw new AppError("Village not found in your PHC.", 404, "RESOURCE_NOT_FOUND");
+    }
+    const updated = await this.repository.updateAshaWorker(workerId, input);
+    return {
+      id: updated.id,
+      userId: updated.userId,
+      fullName: updated.fullName,
+      employeeCode: updated.employeeCode,
+      status: updated.user.status,
+      village: { id: updated.village.id, name: updated.village.name },
+      createdAt: updated.createdAt,
+    };
+  }
+
+  public async activateAshaWorker(userId: string, workerId: string) {
+    const admin = await this.access.requireAdminPhc(userId);
+    const updated = await this.repository.updateAshaWorkerStatus(workerId, UserStatus.ACTIVE, admin.phcId);
+    if (!updated) throw new AppError("ASHA worker not found in your PHC.", 404, "RESOURCE_NOT_FOUND");
+    return {
+      id: updated.id,
+      userId: updated.userId,
+      fullName: updated.fullName,
+      employeeCode: updated.employeeCode,
+      status: updated.user.status,
+      village: { id: updated.village.id, name: updated.village.name },
+      createdAt: updated.createdAt,
+    };
+  }
+
+  public async deactivateAshaWorker(userId: string, workerId: string) {
+    const admin = await this.access.requireAdminPhc(userId);
+    const updated = await this.repository.updateAshaWorkerStatus(workerId, UserStatus.INACTIVE, admin.phcId);
+    if (!updated) throw new AppError("ASHA worker not found in your PHC.", 404, "RESOURCE_NOT_FOUND");
+    return {
+      id: updated.id,
+      userId: updated.userId,
+      fullName: updated.fullName,
+      employeeCode: updated.employeeCode,
+      status: updated.user.status,
+      village: { id: updated.village.id, name: updated.village.name },
+      createdAt: updated.createdAt,
+    };
+  }
+
+  public async deleteAshaWorker(userId: string, workerId: string) {
+    const admin = await this.access.requireAdminPhc(userId);
+    const result = await this.repository.deleteAshaWorker(admin.phcId, workerId);
+    if (!result) throw new AppError("ASHA worker not found in your PHC.", 404, "RESOURCE_NOT_FOUND");
+    return { success: true };
   }
 
   public async operations(userId: string) {

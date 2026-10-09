@@ -5,6 +5,7 @@ export const saveAuthTokens = async (accessToken: string, refreshToken: string) 
 };
 
 export const getAccessToken = async () => localStorage.getItem('access_token');
+export const getRefreshToken = async () => localStorage.getItem('refresh_token');
 
 export const clearAuthTokens = async () => {
   localStorage.removeItem('access_token');

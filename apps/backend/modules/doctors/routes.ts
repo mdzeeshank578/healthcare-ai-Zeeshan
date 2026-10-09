@@ -83,6 +83,11 @@ phcDoctorRoutes.patch(
   validationMiddleware.validate(emptyDoctorActionValidation),
   asyncHandler(doctorController.deactivate),
 );
+phcDoctorRoutes.delete(
+  "/:doctorId",
+  validationMiddleware.validateParams(doctorIdParamValidation),
+  asyncHandler(doctorController.delete),
+);
 phcDoctorRoutes.get(
   "/:doctorId/availability",
   validationMiddleware.validateParams(doctorIdParamValidation),

@@ -49,6 +49,48 @@ export class PhcRepository {
     });
   }
 
+  public findAshaWorker(phcId: string, id: string) {
+    return this.db.ashaWorkerProfile.findFirst({
+      where: { id, village: { phcId } },
+      include: { user: true, village: true },
+    });
+  }
+
+  public updateAshaWorker(
+    id: string,
+    data: { fullName?: string; employeeCode?: string; villageId?: string },
+  ) {
+    return this.db.ashaWorkerProfile.update({
+      where: { id },
+      data,
+      include: { user: true, village: true },
+    });
+  }
+
+  public async updateAshaWorkerStatus(id: string, status: UserStatus, phcId: string) {
+    const worker = await this.findAshaWorker(phcId, id);
+    if (!worker) return null;
+    await this.db.user.update({
+      where: { id: worker.userId },
+      data: { status },
+    });
+    return this.findAshaWorker(phcId, id);
+  }
+
+  public async deleteAshaWorker(phcId: string, id: string) {
+    const worker = await this.findAshaWorker(phcId, id);
+    if (!worker) return null;
+    try {
+      await this.db.user.delete({ where: { id: worker.userId } });
+    } catch {
+      await this.db.user.update({
+        where: { id: worker.userId },
+        data: { status: UserStatus.INACTIVE },
+      });
+    }
+    return { success: true };
+  }
+
   public async overview(phcId: string, today: Date) {
     const tomorrow = new Date(today.getTime() + 86_400_000);
     const [

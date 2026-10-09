@@ -74,6 +74,13 @@ export class DoctorController {
       await this.service.deactivate(this.userId(req), req.params.doctorId as string),
       "Doctor deactivated successfully.",
     );
+  public delete = async (req: AuthRequest, res: Response) =>
+    sendSuccess(
+      res,
+      200,
+      await this.service.delete(this.userId(req), req.params.doctorId as string),
+      "Doctor removed successfully.",
+    );
   public availability = async (req: AuthRequest, res: Response) =>
     sendSuccess(
       res,

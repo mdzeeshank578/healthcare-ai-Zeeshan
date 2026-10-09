@@ -5,7 +5,8 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Alert,
-    SafeAreaView,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -14,6 +15,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AddPatientScreen() {
   const [name, setName] = useState('');
@@ -152,41 +154,41 @@ export default function AddPatientScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
       <StatusBar barStyle="dark-content" />
 
-      <ScrollView
+      <KeyboardAvoidingView
         style={styles.container}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* HEADER */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backArrow}>
+                ‹
+              </Text>
+            </TouchableOpacity>
 
-        {/* HEADER */}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>
+                Add Patient
+              </Text>
 
-        <View style={styles.header}>
-
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backArrow}>
-              ‹
-            </Text>
-          </TouchableOpacity>
-
-          <View>
-            <Text style={styles.title}>
-              Add Patient
-            </Text>
-
-            <Text style={styles.subtitle}>
-              Enter patient information
-            </Text>
+              <Text style={styles.subtitle}>
+                Enter patient information
+              </Text>
+            </View>
           </View>
-
-        </View>
 
         {/* BASIC INFORMATION */}
 
@@ -370,7 +372,8 @@ export default function AddPatientScreen() {
           * Required fields
         </Text>
 
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
     </SafeAreaView>
   );

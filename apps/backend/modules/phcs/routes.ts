@@ -3,8 +3,10 @@ import { activeAccountMiddleware, authMiddleware, phcController } from "../../co
 import { asyncHandler } from "../../middleware/async-handler.js";
 import { validationMiddleware } from "../../middleware/validate.middleware.js";
 import {
+  ashaWorkerIdParamValidation,
   emptyPhcQueryValidation,
   statisticsQueryValidation,
+  updateAshaWorkerValidation,
   updatePhcValidation,
 } from "./validation.js";
 
@@ -44,6 +46,27 @@ phcRoutes.get(
   "/me/asha-workers",
   validationMiddleware.validateQuery(emptyPhcQueryValidation),
   asyncHandler(phcController.ashaWorkers),
+);
+phcRoutes.patch(
+  "/me/asha-workers/:workerId",
+  validationMiddleware.validateParams(ashaWorkerIdParamValidation),
+  validationMiddleware.validate(updateAshaWorkerValidation),
+  asyncHandler(phcController.updateAshaWorker),
+);
+phcRoutes.patch(
+  "/me/asha-workers/:workerId/activate",
+  validationMiddleware.validateParams(ashaWorkerIdParamValidation),
+  asyncHandler(phcController.activateAshaWorker),
+);
+phcRoutes.patch(
+  "/me/asha-workers/:workerId/deactivate",
+  validationMiddleware.validateParams(ashaWorkerIdParamValidation),
+  asyncHandler(phcController.deactivateAshaWorker),
+);
+phcRoutes.delete(
+  "/me/asha-workers/:workerId",
+  validationMiddleware.validateParams(ashaWorkerIdParamValidation),
+  asyncHandler(phcController.deleteAshaWorker),
 );
 phcRoutes.get(
   "/me/operations",

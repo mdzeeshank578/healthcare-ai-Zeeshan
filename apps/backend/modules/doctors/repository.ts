@@ -113,6 +113,19 @@ export class DoctorRepository {
     });
   }
 
+  public async delete(id: string) {
+    const profile = await this.db.doctorProfile.findUnique({ where: { id } });
+    if (!profile) return;
+    try {
+      await this.db.user.delete({ where: { id: profile.userId } });
+    } catch {
+      await this.db.user.update({
+        where: { id: profile.userId },
+        data: { status: UserStatus.INACTIVE },
+      });
+    }
+  }
+
   public deactivationBlockers(id: string) {
     return Promise.all([
       this.db.appointment.count({
@@ -214,10 +227,15 @@ export class DoctorRepository {
     skip: number,
     take: number,
   ) {
+    const doctor = await this.db.doctorProfile.findUnique({
+      where: { id: doctorId },
+      select: { phcId: true },
+    });
     const scope: Prisma.PatientWhereInput = {
       OR: [
         { appointments: { some: { doctorId } } },
         { referrals: { some: { doctorAssignments: { some: { doctorId } } } } },
+        ...(doctor?.phcId ? [{ village: { phcId: doctor.phcId } }] : []),
       ],
     };
     const combined = { AND: [scope, where] } satisfies Prisma.PatientWhereInput;
@@ -226,6 +244,7 @@ export class DoctorRepository {
         where: combined,
         include: {
           village: true,
+          registeredBy: true,
           assessments: {
             take: 1,
             orderBy: { createdAt: "desc" },
@@ -246,24 +265,28 @@ export class DoctorRepository {
     ]);
   }
 
-  public patient(doctorId: string, patientId: string) {
+  public async patient(doctorId: string, patientId: string) {
+    const doctor = await this.db.doctorProfile.findUnique({
+      where: { id: doctorId },
+      select: { phcId: true },
+    });
     return this.db.patient.findFirst({
       where: {
         id: patientId,
         OR: [
           { appointments: { some: { doctorId } } },
           { referrals: { some: { doctorAssignments: { some: { doctorId } } } } },
+          ...(doctor?.phcId ? [{ village: { phcId: doctor.phcId } }] : []),
         ],
       },
       include: {
         village: true,
+        registeredBy: true,
         assessments: {
           orderBy: { createdAt: "desc" },
           include: { predictions: { include: { reasons: true, modelVersion: true } } },
         },
         referrals: {
-          where: { doctorAssignments: { some: { doctorId } } },
-          include: { prediction: true, doctorAssignments: true },
           orderBy: { createdAt: "desc" },
         },
         appointments: { where: { doctorId }, orderBy: { scheduledAt: "desc" } },

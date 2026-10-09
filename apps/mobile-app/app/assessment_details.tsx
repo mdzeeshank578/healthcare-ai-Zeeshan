@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { offlineStorage } from '@/lib/offline-storage';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -244,8 +244,26 @@ export default function AssessmentDetailsScreen() {
     formatList(assessment?.additionalDetails || assessment?.additional_details || assessment?.notes) || 'None';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      {/* Top Navigation Bar */}
+      <View style={styles.topNav}>
+        <TouchableOpacity
+          style={styles.headerBackButton}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/dashboard')}
+          accessibilityLabel="Go back">
+          <Ionicons name="arrow-back" size={22} color="#0F172A" />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.topNavTitle} numberOfLines={1}>
+            {patient?.name || assessment?.patientName || 'Patient Assessment'}
+          </Text>
+          <Text style={styles.topNavSubtitle} numberOfLines={1}>
+            Assessment Details • {dateStr ? new Date(dateStr).toLocaleDateString() : 'Recent'}
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Vitals Cards Row */}
         <View style={styles.vitalsRow}>
           <View style={styles.vitalCard}>
@@ -381,29 +399,60 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  headerBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  topNavTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  topNavSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
   vitalsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
     marginBottom: 16,
   },
   vitalCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   vitalValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#0F172A',
     marginBottom: 4,
+    textAlign: 'center',
   },
   vitalLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
+    textAlign: 'center',
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',

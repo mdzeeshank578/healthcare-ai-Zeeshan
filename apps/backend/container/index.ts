@@ -51,7 +51,7 @@ import { PhcDashboardRepository } from "../modules/phc-dashboard/repository.js";
 import { PhcDashboardService } from "../modules/phc-dashboard/service.js";
 import { JwtService } from "../utils/jwt.js";
 
-export const jwtService = new JwtService(env.jwtSecret);
+export const jwtService = new JwtService(env.jwtSecret, "30d");
 export const mailService = new MailService(env.smtp);
 export const authController = new AuthController(
   new AuthService(new AuthRepository(prisma), mailService, jwtService),

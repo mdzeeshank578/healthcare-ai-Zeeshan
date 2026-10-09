@@ -26,6 +26,16 @@ export const statisticsQueryValidation = z
     path: ["from"],
   });
 export const emptyPhcQueryValidation = z.object({}).strict();
+export const ashaWorkerIdParamValidation = z.object({ workerId: z.string().min(1) }).strict();
+export const updateAshaWorkerValidation = z
+  .object({
+    fullName: z.string().trim().min(2).max(150).optional(),
+    employeeCode: z.string().trim().min(1).max(50).optional(),
+    villageId: uuid.optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, "At least one field is required.");
 
 export type UpdatePhcInput = z.infer<typeof updatePhcValidation>;
 export type StatisticsQuery = z.infer<typeof statisticsQueryValidation>;
+export type UpdateAshaWorkerInput = z.infer<typeof updateAshaWorkerValidation>;

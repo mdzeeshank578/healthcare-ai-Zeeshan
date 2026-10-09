@@ -4,7 +4,6 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Patient = {
   id?: string | number;
@@ -141,31 +141,46 @@ export default function AssessmentScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Health Assessments</Text>
-            <Text style={styles.subtitle}>View and manage patient health assessments</Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.canGoBack() ? router.back() : router.replace('/dashboard')}
+            accessibilityLabel="Go back">
+            <Ionicons name="arrow-back" size={22} color="#16323A" />
+          </TouchableOpacity>
+          <View style={styles.headerTitleArea}>
+            <Text style={styles.title} numberOfLines={1}>Assessments</Text>
+            <Text style={styles.subtitle} numberOfLines={1}>Manage patient health assessments</Text>
           </View>
           <TouchableOpacity style={styles.newButton} onPress={() => router.push('/select-patient')}>
-            <Ionicons name="add" size={19} color="#FFFFFF" />
-            <Text style={styles.newButtonText}>New Assessment</Text>
+            <Ionicons name="add" size={18} color="#FFFFFF" />
+            <Text style={styles.newButtonText}>New</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.statisticsGrid}>
-          {[
-            ['Total', statistics.total, '#E9F7F5', '#0B6F69'],
-            ['High Risk', statistics.high, '#FCE8E8', '#D94A4A'],
-            ['Medium Risk', statistics.medium, '#FFF4D9', '#B77D12'],
-            ['Low Risk', statistics.low, '#E5F5EC', '#2E9B67'],
-          ].map(([label, value, backgroundColor, color]) => (
-            <View key={String(label)} style={[styles.statCard, { backgroundColor: String(backgroundColor) }]}>
-              <Text style={[styles.statValue, { color: String(color) }]}>{value}</Text>
-              <Text style={styles.statLabel}>{label}</Text>
+          <View style={styles.statRow}>
+            <View style={[styles.statCard, { backgroundColor: '#E9F7F5' }]}>
+              <Text style={[styles.statValue, { color: '#0B6F69' }]}>{statistics.total}</Text>
+              <Text style={styles.statLabel}>Total</Text>
             </View>
-          ))}
+            <View style={[styles.statCard, { backgroundColor: '#FCE8E8' }]}>
+              <Text style={[styles.statValue, { color: '#D94A4A' }]}>{statistics.high}</Text>
+              <Text style={styles.statLabel}>High Risk</Text>
+            </View>
+          </View>
+          <View style={styles.statRow}>
+            <View style={[styles.statCard, { backgroundColor: '#FFF4D9' }]}>
+              <Text style={[styles.statValue, { color: '#B77D12' }]}>{statistics.medium}</Text>
+              <Text style={styles.statLabel}>Medium Risk</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: '#E5F5EC' }]}>
+              <Text style={[styles.statValue, { color: '#2E9B67' }]}>{statistics.low}</Text>
+              <Text style={styles.statLabel}>Low Risk</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.searchContainer}>
@@ -246,14 +261,17 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7FAFC' },
   loadingText: { marginTop: 12, color: '#7B8794' },
   content: { padding: 20, paddingBottom: 36 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  title: { color: '#16323A', fontSize: 25, fontWeight: '800' },
-  subtitle: { maxWidth: 205, color: '#7B8794', fontSize: 13, lineHeight: 18, marginTop: 4 },
-  newButton: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 11, paddingVertical: 10, borderRadius: 10, backgroundColor: '#0B8F87' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#DCE5E8' },
+  headerTitleArea: { flex: 1, minWidth: 0 },
+  title: { color: '#16323A', fontSize: 20, fontWeight: '800' },
+  subtitle: { color: '#7B8794', fontSize: 12, lineHeight: 16, marginTop: 2 },
+  newButton: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, backgroundColor: '#0B8F87' },
   newButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
-  statisticsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 22 },
-  statCard: { width: '47.8%', borderRadius: 14, padding: 14 },
-  statValue: { fontSize: 24, fontWeight: '800' },
+  statisticsGrid: { marginTop: 18 },
+  statRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  statCard: { flex: 1, borderRadius: 14, padding: 14 },
+  statValue: { fontSize: 22, fontWeight: '800' },
   statLabel: { color: '#52646A', fontSize: 12, fontWeight: '600', marginTop: 3 },
   searchContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, paddingHorizontal: 14, marginTop: 22, borderRadius: 12, borderWidth: 1, borderColor: '#DCE5E8', backgroundColor: '#FFFFFF' },
   searchInput: { flex: 1, height: '100%', color: '#16323A', fontSize: 15 },

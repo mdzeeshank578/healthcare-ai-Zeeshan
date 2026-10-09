@@ -237,10 +237,14 @@ export default function AshaProfileScreen() {
 
         <Text style={styles.sectionTitle}>ASHA workload</Text>
         <View style={styles.metricGrid}>
-          <MetricCard icon="P" label="Patients" value={localStats.patients} detail="Saved on this device" />
-          <MetricCard icon="A" label="Assessments" value={localStats.assessments} detail={`${dashboard?.assessments.today ?? 0} today`} />
-          <MetricCard icon="R" label="Referrals" value={statistics?.totalReferrals ?? 0} detail={`${dashboard?.referrals.pending ?? 0} pending`} />
-          <MetricCard icon="F" label="Follow-ups" value={statistics?.pendingFollowUps ?? 0} detail={`${dashboard?.followUps.today ?? 0} due today`} />
+          <View style={styles.metricRow}>
+            <MetricCard icon="P" label="Patients" value={localStats.patients} detail="Saved on this device" />
+            <MetricCard icon="A" label="Assessments" value={localStats.assessments} detail={`${dashboard?.assessments.today ?? 0} today`} />
+          </View>
+          <View style={styles.metricRow}>
+            <MetricCard icon="R" label="Referrals" value={statistics?.totalReferrals ?? 0} detail={`${dashboard?.referrals.pending ?? 0} pending`} />
+            <MetricCard icon="F" label="Follow-ups" value={statistics?.pendingFollowUps ?? 0} detail={`${dashboard?.followUps.today ?? 0} due today`} />
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Risk and care coordination</Text>
@@ -343,8 +347,9 @@ const styles = StyleSheet.create({
   detailContent: { flex: 1 },
   detailLabel: { color: '#7B8794', fontSize: 11, marginBottom: 3 },
   detailValue: { color: '#16323A', fontSize: 14, fontWeight: '700' },
-  metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 22 },
-  metricCard: { width: '47.8%', backgroundColor: '#FFF', borderRadius: 16, padding: 14 },
+  metricGrid: { marginBottom: 18 },
+  metricRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  metricCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 16, padding: 14 },
   metricIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: '#E9F7F5', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   metricIconText: { color: '#0B8F87', fontSize: 11, fontWeight: '800' },
   metricValue: { color: '#16323A', fontSize: 24, fontWeight: '800', fontVariant: ['tabular-nums'] },

@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { AuthRequest } from "../../middleware/auth.middleware.js";
 import { AppError } from "../../utils/app-error.js";
 import { sendSuccess } from "../../utils/api-response.js";
+import { env } from "../../config/env.js";
 import type { AshaService } from "./service.js";
 export class AshaController {
   public constructor(private readonly service: AshaService) {}
@@ -237,7 +238,53 @@ export class AshaController {
       ),
       "Extraction corrected successfully.",
     );
-  public speech = async (_r: AuthRequest, _s: Response) => {
-    throw new AppError("Speech provider is not configured.", 503, "SPEECH_PROVIDER_UNAVAILABLE");
+  public speech = async (r: AuthRequest, s: Response) => {
+    if (!r.file) {
+      throw new AppError("No audio file provided.", 400, "MISSING_AUDIO_FILE");
+    }
+
+    const filePath = r.file.path;
+    try {
+      const fs = await import("fs/promises");
+      const fileBytes = r.file.buffer ?? (filePath ? await fs.readFile(filePath) : null);
+      if (!fileBytes || fileBytes.length === 0) {
+        throw new AppError("Uploaded audio file is empty.", 400, "EMPTY_AUDIO_FILE");
+      }
+
+      const formData = new FormData();
+      const blob = new Blob([fileBytes], { type: r.file.mimetype || "audio/m4a" });
+      formData.append("file", blob, r.file.originalname || "recording.m4a");
+
+      const response = await fetch(`${env.ai.baseUrl}/speech`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI speech service responded with status ${response.status}`);
+      }
+
+      const data = (await response.json()) as { text?: string; transcript?: string };
+      const transcript = (data.text || data.transcript || "").trim();
+
+      return sendSuccess(
+        s,
+        200,
+        { transcript },
+        "Speech transcribed successfully.",
+      );
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError(
+        `Speech transcription failed: ${err.message}`,
+        502,
+        "SPEECH_TRANSCRIPTION_FAILED",
+      );
+    } finally {
+      if (filePath) {
+        const fs = await import("fs/promises");
+        fs.unlink(filePath).catch(() => {});
+      }
+    }
   };
 }

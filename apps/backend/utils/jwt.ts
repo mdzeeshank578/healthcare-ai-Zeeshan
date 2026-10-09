@@ -8,7 +8,7 @@ export interface AccessTokenPayload {
 export class JwtService {
   public constructor(
     private readonly secret: string,
-    private readonly expiresIn = "15m",
+    private readonly expiresIn = "30d",
   ) {}
   public sign(payload: AccessTokenPayload): string {
     return jwt.sign({ role: payload.role }, this.secret, {

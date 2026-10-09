@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "healthcare-ai-mobile-v2",
-    "slug": "healthcare-ai-mobile-v2",
+    "slug": "smart-healthcare-system",
+    "owner": "zeeshan578s-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,10 +13,10 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/b2ccc844-197a-43ff-a968-968a05a46cb2",
+      "url": "https://u.expo.dev/df54f818-2897-4644-998b-1d8647f0a3e7",
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 5000
     },
     "ios": {
       "supportsTablet": true,
@@ -53,7 +54,6 @@
       ],
       "expo-sqlite",
       "expo-secure-store",
-      "expo-audio",
       [
         "expo-image-picker",
         {
@@ -61,7 +61,6 @@
         }
       ],
       "expo-asset",
-      "onnxruntime-react-native",
       "expo-updates"
     ],
     "experiments": {
@@ -71,7 +70,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b2ccc844-197a-43ff-a968-968a05a46cb2"
+        "projectId": "df54f818-2897-4644-998b-1d8647f0a3e7"
       }
     }
   }

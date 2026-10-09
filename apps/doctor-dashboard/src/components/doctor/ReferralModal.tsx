@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Patient, ReferralPriority } from '../../types';
 import { referralService } from '../../services/referral.service';
+import { authService } from '../../services/auth.service';
+import { formatDoctorGreetingName } from '../../utils/doctor.utils';
 import { toast } from '../../utils/toast';
 import { X, Share2, Building2, AlertCircle } from 'lucide-react';
 
@@ -35,6 +37,8 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
     setSubmitting(true);
 
     try {
+      const currentUser = authService.getCurrentUser();
+      const docName = formatDoctorGreetingName(currentUser?.name);
       await referralService.create({
         patientId: patient.id,
         patientName: patient.name,
@@ -43,8 +47,8 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
         reason,
         priority,
         destinationPHC,
-        referredByDoctorId: 'usr-1',
-        referredByDoctorName: 'Dr. Tariq Khan',
+        referredByDoctorId: currentUser?.id || 'usr-1',
+        referredByDoctorName: docName,
         notes
       });
 
@@ -59,24 +63,24 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden">
-        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 sm:p-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-blue-100 text-[#1976D2] rounded-lg">
               <Share2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-base">Create PHC Referral</h3>
+              <h3 className="font-bold text-slate-900 text-sm sm:text-base">Create PHC Referral</h3>
               <p className="text-xs text-slate-500">Patient: {patient.name} ({patient.id})</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Destination Health Center</label>
             <div className="relative">

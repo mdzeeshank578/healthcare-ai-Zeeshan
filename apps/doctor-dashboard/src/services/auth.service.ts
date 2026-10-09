@@ -10,6 +10,8 @@ interface ApiUser {
   role: ApiRole;
   status: string;
   isEmailVerified: boolean;
+  name?: string;
+  fullName?: string;
 }
 
 interface ApiEnvelope<T> {
@@ -24,14 +26,16 @@ interface LoginData {
   refreshToken: string;
 }
 
-const toDashboardUser = (user: ApiUser): User => {
+const toDashboardUser = (user: ApiUser, resolvedName?: string): User => {
   if (user.role !== 'DOCTOR' && user.role !== 'PHC_ADMIN') {
     throw new Error('This account is not permitted to access the doctor dashboard.');
   }
+  const defaultTitle = user.role === 'DOCTOR' ? 'Doctor' : 'PHC Administrator';
+  const name = resolvedName || user.fullName || user.name || defaultTitle;
   return {
     id: user.id,
     email: user.email,
-    name: user.role === 'DOCTOR' ? 'Doctor' : 'PHC Administrator',
+    name,
     role: user.role === 'DOCTOR' ? 'doctor' : 'admin',
   };
 };
@@ -51,7 +55,21 @@ export const authService = {
       deviceId,
     });
     const { user: apiUser, accessToken, refreshToken } = response.data.data;
-    const user = toDashboardUser(apiUser);
+    authStorage.setTokens(accessToken, refreshToken);
+
+    let resolvedName = apiUser.fullName || apiUser.name;
+    if (!resolvedName && apiUser.role === 'DOCTOR') {
+      try {
+        const docRes = await api.get<ApiEnvelope<{ fullName?: string }>>('/doctors/me');
+        if (docRes.data.data?.fullName) {
+          resolvedName = docRes.data.data.fullName;
+        }
+      } catch {
+        // fallback
+      }
+    }
+
+    const user = toDashboardUser(apiUser, resolvedName);
     authStorage.setSession(accessToken, refreshToken, user);
     return user;
   },
@@ -69,7 +87,27 @@ export const authService = {
   async validateSession(): Promise<User | null> {
     if (!authStorage.getAccessToken() || !authStorage.getRefreshToken()) return null;
     const response = await api.get<ApiEnvelope<ApiUser>>('/auth/me');
-    const user = toDashboardUser(response.data.data);
+    const apiUser = response.data.data;
+
+    let resolvedName = apiUser.fullName || apiUser.name;
+    if (!resolvedName && apiUser.role === 'DOCTOR') {
+      try {
+        const docRes = await api.get<ApiEnvelope<{ fullName?: string }>>('/doctors/me');
+        if (docRes.data.data?.fullName) {
+          resolvedName = docRes.data.data.fullName;
+        }
+      } catch {
+        // fallback
+      }
+    }
+
+    // Preserve existing non-generic name if present
+    const existing = this.getCurrentUser();
+    if (!resolvedName && existing?.name && existing.name !== 'Doctor') {
+      resolvedName = existing.name;
+    }
+
+    const user = toDashboardUser(apiUser, resolvedName);
     const accessToken = authStorage.getAccessToken();
     const refreshToken = authStorage.getRefreshToken();
     if (accessToken && refreshToken) authStorage.setSession(accessToken, refreshToken, user);

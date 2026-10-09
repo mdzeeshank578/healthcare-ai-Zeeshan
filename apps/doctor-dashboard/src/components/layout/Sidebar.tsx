@@ -17,7 +17,8 @@ import {
   Stethoscope,
   Activity,
   CalendarDays,
-  RefreshCw
+  RefreshCw,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -62,28 +63,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, onClose }) => {
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-200 ease-in-out lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 sm:w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#1976D2] flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-xl bg-[#1976D2] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
               <Activity className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-slate-900 leading-tight">HealthAI</h1>
-              <p className="text-[11px] font-medium text-slate-400 tracking-wider uppercase">
+              <h1 className="font-bold text-base sm:text-lg text-slate-900 leading-tight">HealthAI</h1>
+              <p className="text-[10px] sm:text-[11px] font-medium text-slate-400 tracking-wider uppercase">
                 Healthcare Intelligence
               </p>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
@@ -99,9 +107,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, onClose }) => {
                 end={item.to === '/doctor' || item.to === '/admin'}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-[#E3F2FD] text-[#1976D2] font-semibold'
+                      ? 'bg-[#E3F2FD] text-[#1976D2] font-semibold shadow-xs'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`
                 }
@@ -123,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, onClose }) => {
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
